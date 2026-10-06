@@ -1,0 +1,58 @@
+{
+	"name": "@black942026/pi-todo-list",
+	"version": "0.1.0",
+	"description": "Hierarchical, session-scoped todo list extension for Pi. Three levels, prerequisite dependencies, branch-safe replay.",
+	"type": "module",
+	"license": "MIT",
+	"engines": {
+		"node": ">=22.19.0"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/black-94/pi-todo-list.git"
+	},
+	"homepage": "https://github.com/black-94/pi-todo-list#readme",
+	"bugs": {
+		"url": "https://github.com/black-94/pi-todo-list/issues"
+	},
+	"keywords": [
+		"pi-package",
+		"pi",
+		"pi-extension",
+		"todo"
+	],
+	"pi": {
+		"extensions": [
+			"./index.ts"
+		]
+	},
+	"files": [
+		"index.ts",
+		"src",
+		"README.md",
+		"LICENSE"
+	],
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"test": "vitest --run",
+		"test:watch": "vitest",
+		"pack:check": "vitest --run test/load.test.ts test/package.test.ts && npm pack --dry-run",
+		"prepublishOnly": "npm run typecheck && npm test && npm run pack:check"
+	},
+	"peerDependencies": {
+		"@earendil-works/pi-coding-agent": "*",
+		"@earendil-works/pi-tui": "*",
+		"typebox": "*"
+	},
+	"devDependencies": {
+		"@earendil-works/pi-coding-agent": "1.0.0",
+		"@earendil-works/pi-tui": "1.0.0",
+		"@types/node": "^22.10.0",
+		"typebox": "1.3.27",
+		"typescript": "^5.7.0",
+		"vitest": "^3.0.0"
+	}
+}
