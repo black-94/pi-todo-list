@@ -219,19 +219,20 @@ To cancel the only leaf of a container, list that leaf in `removeIds` and pass `
 A tree panel is drawn above the editor:
 
 ```
-● TODOS (2/5)
-├─ ◐ Auth refactor
+● TODOS
+├─ ◐ Auth refactor (2/4)
 │  ├─ ✓ 1 Analyse error logs
 │  └─ ◐ 2 Fix auth flow
 │     ├─ ✓ 2.1 Draft spec
 │     ├─ ◐ 2.2 Review spec ⛓ 2.1
 │     └─ ○ 2.3 Implement
-└─ ○ Fix login bug
+└─ ○ Fix login bug (0/1)
 ```
 
-Five executable leaves, two completed; `Auth refactor` and `Fix auth flow` are `in_progress` because `2.2` is, while `Analyse error logs` is complete and the flattened `Fix login bug` is pending. The heading reads `TODOS (2/5)`: two completed leaves (`Analyse error logs`, `Draft spec`) out of five total executable leaves.
+Five executable leaves, two completed; `Auth refactor` and `Fix auth flow` are `in_progress` because `2.2` is, while `Analyse error logs` is complete and the flattened `Fix login bug` is pending. Each top-level topic carries its own count: `Auth refactor (2/4)` (two of its four leaves complete) and `Fix login bug (0/1)`.
 
-- Heading: `● TODOS (completed/total executable leaves)`. There is no topic count and no separator dot. **Completed** = leaves whose status is `completed` — `pending` and `in_progress` are not counted, and a blocked `pending` leaf is still not completed. **Total** = every executable leaf in the tree (`countSnapshot.leaves`), including the leaves of retained, folded completed topics; leaves removed by capacity eviction or explicit `removeIds` cancellation are no longer counted. Containers are never counted. The leading glyph and its color still track activity, not the numerator: `●` when any leaf is unfinished (`pending` + `in_progress` > 0), otherwise `○`.
+- Heading: `● TODOS` (text only). The glyph and its color track activity: `●` when any leaf is unfinished (`pending` + `in_progress` > 0), otherwise `○`. There is no heading count and no separator dot.
+- **Per-topic count**: every top-level topic appends `(completed/total)` — its own executable leaves. **Completed** = that topic's leaves whose status is `completed` (`pending` and `in_progress` are not counted; a blocked `pending` leaf is still not completed). **Total** = that topic's every executable leaf, including those of a retained, folded completed topic; containers are never counted. A flattened single-leaf topic shows its count on the leaf row it renders in place of the topic row.
 - Icons: `○` pending, `◐` in progress, `✓` completed.
 - Topics are unnumbered; layer-2 items are `1`, `2`, …; layer-3 leaves are `1.1`, `1.2`, ….
 - Dependencies render as `⛓ <display number>`; unmet prerequisites are highlighted (`warning`), met ones dimmed.
@@ -344,7 +345,7 @@ Coverage (see `test/`):
 - `retention.test.ts` — **the real tool's `details`** for retained completed topics: read returns full descendants while `display` folds; `writable` round-trip preserves `completedSeq` with `changed:false`; rename/reorder do not change eviction priority; whole-candidate validation runs before eviction (a bad evicted topic is not masked); explicit cancel still replays as empty after a cache clear; **legacy v2 snapshot** reads and migrates on the next write; strict parser rejects corrupt `completedSeq` yet accepts the real writer; **branch A/B reproduce different eviction choices**; **real file-backed session** persists `completedSeq`/`evictedTopics` through reopen, fork, compaction, and rollback to the pre-eviction head.
 - `replay.test.ts` — last-valid-wins, foreign ignored, unsupported/corrupt reported as diagnostics, empty snapshot wins, branches, compaction, clone-on-read.
 - `envelope.test.ts` — **the real registered tool's full `details`** (with `changed`/`summary`) appended verbatim, then cache cleared and a new factory used: replay from the branch, IDs/status/dependencies preserved, diagnostics empty, and the same for a real retained completed topic after the last leaf completes; a corrupt summary is reported rather than masked.
-- `widget.test.ts` — heading counts (`TODOS (completed/total)`: only completed leaves counted, mixed pending/in_progress/completed and blocked pending excluded, fully completed retained, folded completed topic, capacity-evicted leaves excluded), a completed leaf staying visible with `✓` while its topic is not fully complete (not hidden per turn), mixed rendering, flatten, dependency highlight/dim, terminal-width truncation, per-topic compact visibility with `+N more`, **completed-topic folding** (one line, no descendants, no `+N more`, even when expanded), theme tokens and theme refresh, headless.
+- `widget.test.ts` — count-free heading plus per-topic `(completed/total)`: only completed leaves counted, mixed pending/in_progress/completed and blocked pending excluded, fully completed retained, folded completed topic, capacity-evicted leaves excluded, and the count shown on a flattened single-leaf topic row, a completed leaf staying visible with `✓` while its topic is not fully complete (not hidden per turn), mixed rendering, flatten, dependency highlight/dim, terminal-width truncation, per-topic compact visibility with `+N more`, **completed-topic folding** (one line, no descendants, no `+N more`, even when expanded), theme tokens and theme refresh, headless.
 - `schema.test.ts` — TypeBox `Value.Check` against the real schemas: rejects container status/blockedBy, mixed leaf+subtasks, unknown fields, bad types; accepts empty `subtasks`/`items` (needed for cancellation) which the domain then gates.
 - `renderer.test.ts` — tool `renderCall`/`renderResult` truncated to width (CJK/wide characters), error lines, invalidate.
 - `registration.test.ts` — exactly two tools, `model-only`/`sequential` write, guidance, `isError` on invalid input, `writable` round-trip, abort handling, and the real-tool cancellation path (last leaf cancelled → empty container/topic pruned) plus node type-conversion rejection.

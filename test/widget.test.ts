@@ -71,9 +71,14 @@ describe("renderTodoLines", () => {
 		expect(renderTodoLines(buildReadResult({ revision: "", topics: [] }), { ...opts, theme: plain, truncate: plainTruncate })).toEqual([]);
 	});
 
-	it("renders the heading with completed/total executable-leaf counts", () => {
+	it("renders a count-free heading and puts completed/total after each topic", () => {
 		const lines = renderTodoLines(buildReadResult(twoTopicSnapshot()), { ...opts, theme: plain, truncate: plainTruncate });
-		expect(lines[0]).toBe("● TODOS (0/3)");
+		expect(lines[0]).toBe("● TODOS");
+		const joined = lines.join("\n");
+		// Flat holds one leaf (flattened row); Multi holds two leaves.
+		expect(joined).toContain("single leaf (0/1)");
+		expect(joined).toContain("Multi (0/2)");
+		expect(joined).not.toContain("TODOS (");
 	});
 
 	it("counts only completed leaves in the numerator; pending, in_progress and blocked pending are excluded", () => {
@@ -86,22 +91,27 @@ describe("renderTodoLines", () => {
 		expect(read.counts.inProgress).toBe(1);
 		expect(read.counts.pending).toBe(1);
 		const lines = renderTodoLines(read, { ...opts, theme: plain, truncate: plainTruncate });
-		expect(lines[0]).toBe("● TODOS (1/3)");
+		expect(lines[0]).toBe("● TODOS");
+		expect(lines.join("\n")).toContain("T (1/3)");
 	});
 
-	it("keeps a fully completed retained topic in the total and shows completed over total", () => {
+	it("keeps a fully completed retained topic in its own total and shows completed over total", () => {
 		const chained = makeChained();
 		chained.write({ topics: [{ title: "T", items: [{ title: "a" }, { title: "b" }] }] });
 		const topic = chained.state.topics[0]!;
 		chained.write({ topics: [{ id: topic.id, title: "T", items: topic.items.map((i) => ({ id: i.id, title: i.title, status: "completed" as LeafStatus })) }] });
 		const lines = renderTodoLines(buildReadResult(chained.state), { ...opts, theme: plain, truncate: plainTruncate });
-		expect(lines[0]).toBe("○ TODOS (2/2)");
+		expect(lines[0]).toBe("○ TODOS");
+		expect(lines.join("\n")).toContain("T (2/2)");
 	});
 
-	it("includes a folded completed topic's leaves in the total alongside an active topic", () => {
+	it("shows each topic's own completed/total alongside a folded completed topic", () => {
 		const lines = renderTodoLines(buildReadResult(completedAndActiveSnapshot()), { ...opts, theme: plain, truncate: plainTruncate });
-		// Done: 2 completed (folded, retained); Active: 2 pending -> 2 of 4 completed.
-		expect(lines[0]).toBe("● TODOS (2/4)");
+		// Done: 2 completed (folded, retained) -> (2/2); Active: 2 pending -> (0/2).
+		expect(lines[0]).toBe("● TODOS");
+		const joined = lines.join("\n");
+		expect(joined).toContain("Done (2/2)");
+		expect(joined).toContain("Active (0/2)");
 	});
 
 	it("drops a capacity-evicted topic's leaves from the total", () => {
@@ -117,8 +127,12 @@ describe("renderTodoLines", () => {
 		expect(evicted.ok).toBe(true);
 		if (evicted.ok) expect(evicted.summary.evictedTopics).toEqual(["A"]);
 		const lines = renderTodoLines(buildReadResult(chained.state), { ...opts, theme: plain, truncate: plainTruncate });
-		// A is evicted, so its leaf is gone from the total: 3 leaves (B completed, C/D pending).
-		expect(lines[0]).toBe("● TODOS (1/3)");
+		// A is evicted, so its leaf is gone: B completed (1/1), C/D each pending (0/1).
+		expect(lines[0]).toBe("● TODOS");
+		const joined = lines.join("\n");
+		expect(joined).not.toContain("A (");
+		expect(joined).toContain("(1/1)");
+		expect(joined.match(/\(0\/1\)/g)).toHaveLength(2);
 	});
 
 	it("keeps a completed leaf visible with ✓ while its topic is not fully complete (no per-turn hiding)", () => {
@@ -298,7 +312,7 @@ describe("TodoWidget", () => {
 		setSnapshot("s1", mixedSnapshot());
 		widget.update();
 		expect(fake.registry.has("pi-todo-list")).toBe(true);
-		expect(fake.lastComponent!.render(120)[0]).toBe("● TODOS (1/3)");
+		expect(fake.lastComponent!.render(120)[0]).toBe("● TODOS");
 		setSnapshot("s1", { revision: "empty", topics: [] });
 		widget.update();
 		expect(fake.registry.size).toBe(0);

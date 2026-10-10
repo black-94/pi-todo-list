@@ -45,14 +45,19 @@ interface TopicBlock {
 	descendants: string[];
 }
 
+/** Per-topic `(completed/total)` executable-leaf count shown after the topic. */
+function topicProgress(topic: TopicView, theme: RenderTheme): string {
+	return theme.fg("dim", ` (${topic.completedLeafCount}/${topic.leafCount})`);
+}
+
 function buildTopicBlock(topic: TopicView, topicIsLast: boolean, theme: RenderTheme): TopicBlock {
 	const singleItem = topic.items[0];
 	if (topic.leafCount === 1 && topic.items.length === 1 && singleItem) {
 		const leaf = singleItem.type === "leaf" ? singleItem : singleItem.subtasks[0];
-		if (leaf) return { overview: `${connector("", topicIsLast, theme)} ${leafBody(leaf, null, theme)}`, descendants: [] };
+		if (leaf) return { overview: `${connector("", topicIsLast, theme)} ${leafBody(leaf, null, theme)}${topicProgress(topic, theme)}`, descendants: [] };
 	}
 
-	const overview = `${connector("", topicIsLast, theme)} ${icon(topic.status, theme)} ${theme.fg("muted", topic.title)}`;
+	const overview = `${connector("", topicIsLast, theme)} ${icon(topic.status, theme)} ${theme.fg("muted", topic.title)}${topicProgress(topic, theme)}`;
 	// A completed topic is folded to one summary row. Its descendants stay in the
 	// read data but are never rendered, even when the panel or tools are expanded.
 	if (topic.completed) return { overview, descendants: [] };
@@ -77,12 +82,12 @@ function buildTopicBlock(topic: TopicView, topicIsLast: boolean, theme: RenderTh
 }
 
 function heading(read: ReadResult, theme: RenderTheme): string {
-	// The glyph/color still reflect activity (any unfinished leaf), but the
-	// count is completed/total, not unfinished/total.
+	// The glyph/color reflect activity (any unfinished leaf). The completed/total
+	// count moved from here to each topic row, so the heading stays count-free.
 	const unfinished = read.counts.pending + read.counts.inProgress;
 	const active = unfinished > 0;
 	const color = active ? "accent" : "dim";
-	return `${theme.fg(color, active ? "●" : "○")} ${theme.fg(color, `TODOS (${read.counts.completed}/${read.counts.leaves})`)}`;
+	return `${theme.fg(color, active ? "●" : "○")} ${theme.fg(color, "TODOS")}`;
 }
 
 /**
